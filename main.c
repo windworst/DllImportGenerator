@@ -5,10 +5,15 @@
 void importer_output(FILE* f, const char* moduleName, FunctionResult results[], int functionCount) {
   const char * file_head          = "#pragma once\n\n"
                                     "#include <Windows.h>\n\n"
-                                    "#define _FUNC_IMPORT(CTX, FUNC_NAME)  (((*(FARPROC*)&((CTX)->FUNC_NAME)) = GetProcAddress(((CTX)->_hm), #FUNC_NAME)) != NULL)\n\n"
+                                    "#ifdef DLL_IMPORT_DEBUG\n"
+                                    "#define _DEBUG_OUTPUT 1\n"
+                                    "#else\n"
+                                    "#define _DEBUG_OUTPUT 0\n"
+                                    "#endif\n\n"
+                                    "#define _FUNC_IMPORT(CTX, FUNC_NAME)  (((*(FARPROC*)&((CTX)->FUNC_NAME)) = GetProcAddress(((CTX)->_hm), #FUNC_NAME)) , _DEBUG_OUTPUT && printf(\"FUNC: %s => %p\\n\", #FUNC_NAME, (CTX)->FUNC_NAME) , (CTX)->FUNC_NAME != NULL)\n\n"
                                     "#define _MODULE_UNLOAD(CTX) ((NULL != (CTX) && NULL != (CTX)->_hm) && (FreeLibrary((CTX)->_hm), memset((CTX), 0, sizeof(*CTX))))\n\n";
   const char* module_load_start   = "#define _MODULE_LOAD(DLL, CTX) ((NULL != (CTX)) \\\n"
-                                    "    && (((CTX)->_hm = LoadLibraryA(DLL)) != NULL) \\\n";
+                                    "    && (((CTX)->_hm = LoadLibraryA(DLL)), _DEBUG_OUTPUT && printf(\"MODULE: %s => %p\\n\", DLL, (CTX)->_hm), (CTX)->_hm != NULL) \\\n";
   const char* func_import         = "    && _FUNC_IMPORT((CTX), %.*s) \\\n";
   const char* module_load_end     = ")\n\n";
 
