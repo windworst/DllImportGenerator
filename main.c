@@ -4,6 +4,7 @@
 
 void importer_output(FILE* f, const char* moduleName, FunctionResult results[], int functionCount) {
   const char * file_head          = "#pragma once\n\n"
+                                    "#include <stdio.h>\n"
                                     "#include <Windows.h>\n\n"
                                     "#ifdef DLL_IMPORT_DEBUG\n"
                                     "#define _DEBUG_OUTPUT 1\n"
