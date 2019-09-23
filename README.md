@@ -30,29 +30,34 @@ dige Module module.txt
 > dige Module module.txt
 #pragma once
 
+#include <stdio.h>
 #include <Windows.h>
 
-#define _FUNC_IMPORT(CTX, FUNC_NAME)  (((*(FARPROC*)&((CTX)->FUNC_NAME)) = GetProcAddress(((CTX)->_hm), #FUNC_NAME)) != NULL)
+#ifdef DLL_IMPORT_DEBUG
+#define _LOG(...) (_DEBUG_OUTPUT && fprintf(stdout, __VA_ARGS__) && fflush(stdout))
+#else
+#define _LOG(...) (1)
+#endif
+
+#define _FUNC_IMPORT(CTX, FUNC_NAME)  (((*(FARPROC*)&((CTX)->FUNC_NAME)) = GetProcAddress(((CTX)->_hm), #FUNC_NAME)) , _LOG("FUNC: %s => %p\n", #FUNC_NAME, (CTX)->FUNC_NAME) , (CTX)->FUNC_NAME != NULL)
 
 #define _MODULE_UNLOAD(CTX) ((NULL != (CTX) && NULL != (CTX)->_hm) && (FreeLibrary((CTX)->_hm), memset((CTX), 0, sizeof(*CTX))))
 
 #define _MODULE_LOAD(DLL, CTX) ((NULL != (CTX)) \
-    && (((CTX)->_hm = LoadLibraryA(DLL)) != NULL) \
+    && (((CTX)->_hm = LoadLibraryA(DLL)), _LOG("MODULE: %s => %p\n", DLL, (CTX)->_hm), (CTX)->_hm != NULL) \
     && _FUNC_IMPORT((CTX), a) \
     && _FUNC_IMPORT((CTX), b) \
-    && _FUNC_IMPORT((CTX), c) \
 )
 
 typedef struct {
   HMODULE _hm;
-  int        (__stdcall* a)
+  int
+             (__stdcall* a)
              ();
 
-  void       (__stdcall* b)
+  void
+             (__stdcall* b)
              (int xx);
-
-  char       (__stdcall* c)
-             (char * xxx);
 
 } _CTX;
 
@@ -68,6 +73,7 @@ dige Module module.txt > module.h
 
 在代码里使用
 ```
+#define DLL_IMPORT_DEBUG // 定义该宏, 导入DLL时将输出调试信息
 #include "module.h"
 ...
 Module module;
