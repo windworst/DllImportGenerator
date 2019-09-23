@@ -7,11 +7,10 @@ void importer_output(FILE* f, const char* moduleName, FunctionResult results[], 
                                     "#include <stdio.h>\n"
                                     "#include <Windows.h>\n\n"
                                     "#ifdef DLL_IMPORT_DEBUG\n"
-                                    "#define _DEBUG_OUTPUT 1\n"
+                                    "#define _LOG(...) (_DEBUG_OUTPUT && fprintf(stdout, __VA_ARGS__) && fflush(stdout))\n"
                                     "#else\n"
-                                    "#define _DEBUG_OUTPUT 0\n"
+                                    "#define _LOG(...) (1)\n"
                                     "#endif\n\n"
-                                    "#define _LOG(...) (_DEBUG_OUTPUT && fprintf(stdout, __VA_ARGS__) && fflush(stdout))\n\n"
                                     "#define _FUNC_IMPORT(CTX, FUNC_NAME)  (((*(FARPROC*)&((CTX)->FUNC_NAME)) = GetProcAddress(((CTX)->_hm), #FUNC_NAME)) , _LOG(\"FUNC: %s => %p\\n\", #FUNC_NAME, (CTX)->FUNC_NAME) , (CTX)->FUNC_NAME != NULL)\n\n"
                                     "#define _MODULE_UNLOAD(CTX) ((NULL != (CTX) && NULL != (CTX)->_hm) && (FreeLibrary((CTX)->_hm), memset((CTX), 0, sizeof(*CTX))))\n\n";
   const char* module_load_start   = "#define _MODULE_LOAD(DLL, CTX) ((NULL != (CTX)) \\\n"
@@ -21,7 +20,7 @@ void importer_output(FILE* f, const char* moduleName, FunctionResult results[], 
 
   const char* ctx_start           = "typedef struct {\n"
                                     "  HMODULE _hm;\n";
-  const char* ctx_func            = "  %-10.*s (__stdcall* %.*s)\n             %.*s;\n\n";
+  const char* ctx_func            = "  %-10.*s\n             (__stdcall* %.*s)\n             %.*s;\n\n";
   const char* ctx_end             = "} _CTX;\n\n";
 
   const char* file_end            = "typedef _CTX %s;\n"

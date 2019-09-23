@@ -31,33 +31,40 @@ int peek_bracket(const char* str) {
 }
 
 int peek_function(const char* str, FunctionResult * result) {
-  int index = 0, start = 0;
+  int index = 0;
+  int return_type_start = -1, return_type_len = -1, function_name_start = -1, function_name_len = -1;
 
-  index += jump_space(str + index);
-  start = index;
+  for(;;) {
+    int last_index = index;
+    index += jump_space(str + index);
 
-  //return type
-  int return_type_start = index, return_type_len = peek_identifier(str + return_type_start);
+    if (return_type_start < 0) { return_type_start = index; }
 
-  if(return_type_len < 0) {
+    int token_len = peek_identifier(str + index);
+    if (token_len < 0) { break; }
+
+    return_type_len = last_index - return_type_start;
+
+    function_name_start = index;
+    function_name_len = token_len;
+
+    index += token_len;
+  }
+
+  if(return_type_len <= 0) {
     return -1;
   }
-  index = return_type_start + return_type_len;
-  index += jump_space(str + index);
 
-  //function name
-  int function_name_start = index, function_name_len = peek_identifier(str + function_name_start);
-
-  if(function_name_len < 0) {
+  if(function_name_len <= 0) {
     return -2;
   }
-  index = function_name_start + function_name_len;
+
   index += jump_space(str + index);
 
   // load params
   int params_start = index, params_len = peek_bracket(str + params_start);
 
-  if(params_len < 0) {
+  if(params_len <= 0) {
     return -3;
   }
   index = params_start + params_len;
@@ -65,7 +72,7 @@ int peek_function(const char* str, FunctionResult * result) {
   if(';' == str[index]) { ++ index; }
 
   result->functionStr = str;
-  result->start = start;
+  result->start = return_type_start;
   result->end = index;
   result->returnTypeIndex = return_type_start;
   result->returnTypeLen = return_type_len;
