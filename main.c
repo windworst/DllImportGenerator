@@ -7,7 +7,7 @@ void importer_output(FILE* f, const char* moduleName, FunctionResult results[], 
                                     "#include <stdio.h>\n"
                                     "#include <Windows.h>\n\n"
                                     "#ifdef DLL_IMPORT_DEBUG\n"
-                                    "#define _LOG(...) (_DEBUG_OUTPUT && fprintf(stdout, __VA_ARGS__) && fflush(stdout))\n"
+                                    "#define _LOG(...) (fprintf(stdout, __VA_ARGS__) && fflush(stdout))\n"
                                     "#else\n"
                                     "#define _LOG(...) (1)\n"
                                     "#endif\n\n"
@@ -20,7 +20,7 @@ void importer_output(FILE* f, const char* moduleName, FunctionResult results[], 
 
   const char* ctx_start           = "typedef struct {\n"
                                     "  HMODULE _hm;\n";
-  const char* ctx_func            = "  %-10.*s\n             (__stdcall* %.*s)\n             %.*s;\n\n";
+  const char* ctx_func            = "  %.*s\n             (__stdcall* %.*s)\n             %.*s;\n\n";
   const char* ctx_end             = "} _CTX;\n\n";
 
   const char* file_end            = "typedef _CTX %s;\n"
