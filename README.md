@@ -34,7 +34,7 @@ dige Module module.txt
 #include <Windows.h>
 
 #ifdef DLL_IMPORT_DEBUG
-#define _LOG(...) (_DEBUG_OUTPUT && fprintf(stdout, __VA_ARGS__) && fflush(stdout))
+#define _LOG(...) (fprintf(stdout, __VA_ARGS__) && fflush(stdout))
 #else
 #define _LOG(...) (1)
 #endif
