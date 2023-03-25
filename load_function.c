@@ -1,9 +1,12 @@
 #include "load_function.h"
 
+int IS_STAR(int c) { return ( '*' == (c) ); }
 int IS_SPACE(int c) { return ( ' ' == (c) || '\t' == (c) || '\v' == (c) || '\r' == (c) || '\n' == (c) ); }
 int IS_NUMBER (int c) { return ( '0' <= (c) && (c) <= '9' ); }
 int IS_IDENTIFIER_FIRST (int c) { return ( ('A' <= (c) && (c) <= 'Z') || ('a' <= (c) && (c) <= 'z') || ('_' == (c)) ); }
 int IS_IDENTIFIER_FOLLOW (int c) { return ( IS_IDENTIFIER_FIRST(c) || IS_NUMBER(c) ); }
+int IS_RETURN_VALUE_FIRST (int c) { return ( IS_IDENTIFIER_FIRST(c) || IS_STAR(c) ); }
+int IS_RETURN_VALUE_FOLLOW (int c) { return ( IS_IDENTIFIER_FOLLOW(c) || IS_STAR(c) ); }
 
 int jump_space(const char* str) {
   int start = 0;
@@ -11,10 +14,10 @@ int jump_space(const char* str) {
   return start;
 }
 
-int peek_identifier(const char* str) {
+int peek_return_value(const char* str) {
   int start = 0;
-  if( IS_IDENTIFIER_FIRST(str[start]) ) {
-    while(IS_IDENTIFIER_FOLLOW(str[++start]));
+  if( IS_RETURN_VALUE_FIRST(str[start]) ) {
+    while(IS_RETURN_VALUE_FOLLOW(str[++start]));
     return start;
   }
   return -1;
@@ -40,7 +43,7 @@ int peek_function(const char* str, FunctionResult * result) {
 
     if (return_type_start < 0) { return_type_start = index; }
 
-    int token_len = peek_identifier(str + index);
+    int token_len = peek_return_value(str + index);
     if (token_len < 0) { break; }
 
     return_type_len = last_index - return_type_start;
