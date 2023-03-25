@@ -25,9 +25,19 @@ int peek_return_value(const char* str) {
 
 int peek_bracket(const char* str) {
   int start = 0;
+  int level = 0;
   if(str[start] == '(') {
+    ++ level;
     char c;
-    while(c = str[++ start], '\0' != c && ')' != c);
+    while(c = str[++ start], '\0' != c) {
+      if(c == '(') {
+        ++ level;
+      } else if (c == ')') {
+        if(-- level <= 0) {
+          break;
+        }
+      }
+    }
     if(str[start] == ')') return start + 1;
   }
   return -1;
