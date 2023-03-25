@@ -3,24 +3,39 @@
 #include "load_function.h"
 
 void importer_output(FILE* f, const char* moduleName, FunctionResult results[], int functionCount) {
-  const char * file_head          = "#pragma once\n\n"
+  const char *file_head           = "#pragma once\n\n"
                                     "#include <stdio.h>\n"
-                                    "#include <Windows.h>\n\n"
-                                    "#ifdef DLL_IMPORT_DEBUG\n"
+                                    "#include <string.h>\n\n";
+  const char *file_include        = "#if defined BUILD_ON_WINDOWS\n"
+                                    "#include <Windows.h>\n"
+                                    "#define _FUNC_IMPORT_ACTION(h,n) GetProcAddress((h),(n))\n"
+                                    "#define _MODULE_UNLOAD_ACTION(h) FreeLibrary((h))\n"
+                                    "#define _MODULE_LOAD_ACTION(p) LoadLibraryA((p))\n"
+                                    "#define _MODULE_HANDLER HMODULE\n"
+                                    "#define _STDCALL_DEF_ __stdcall\n"
+                                    "#elif defined BUILD_ON_LINUX || defined BUILD_ON_MAC\n"
+                                    "#include <dlfcn.h>\n"
+                                    "#define _FUNC_IMPORT_ACTION(h,n) dlsym((h),(n))\n"
+                                    "#define _MODULE_UNLOAD_ACTION(h) dlclose((h))\n"
+                                    "#define _MODULE_LOAD_ACTION(p) dlopen((p),0)\n"
+                                    "#define _MODULE_HANDLER void*\n"
+                                    "#define _STDCALL_DEF_\n"
+                                    "#endif\n\n";
+  const char * module_loader      = "#if defined DLL_IMPORT_DEBUG\n"
                                     "#define _LOG(...) (fprintf(stdout, __VA_ARGS__) && fflush(stdout))\n"
                                     "#else\n"
                                     "#define _LOG(...) (1)\n"
                                     "#endif\n\n"
-                                    "#define _FUNC_IMPORT(CTX, FUNC_NAME)  (((*(FARPROC*)&((CTX)->FUNC_NAME)) = GetProcAddress(((CTX)->_hm), #FUNC_NAME)) , _LOG(\"FUNC: %s => %p\\n\", #FUNC_NAME, (CTX)->FUNC_NAME) , (CTX)->FUNC_NAME != NULL)\n\n"
-                                    "#define _MODULE_UNLOAD(CTX) ((NULL != (CTX) && NULL != (CTX)->_hm) && (FreeLibrary((CTX)->_hm), memset((CTX), 0, sizeof(*CTX))))\n\n";
+                                    "#define _FUNC_IMPORT(CTX, FUNC_NAME)  (((*(FARPROC*)&((CTX)->FUNC_NAME)) = _FUNC_IMPORT_ACTION(((CTX)->_hm), #FUNC_NAME)) , _LOG(\"FUNC: %s => %p\\n\", #FUNC_NAME, (CTX)->FUNC_NAME) , (CTX)->FUNC_NAME != NULL)\n\n"
+                                    "#define _MODULE_UNLOAD(CTX) ((NULL != (CTX) && NULL != (CTX)->_hm) && (_MODULE_UNLOAD_ACTION((CTX)->_hm), memset((CTX), 0, sizeof(*CTX))))\n\n";
   const char* module_load_start   = "#define _MODULE_LOAD(DLL, CTX) ((NULL != (CTX)) \\\n"
-                                    "    && (((CTX)->_hm = LoadLibraryA(DLL)), _LOG(\"MODULE: %s => %p\\n\", DLL, (CTX)->_hm), (CTX)->_hm != NULL) \\\n";
+                                    "    && (((CTX)->_hm = _MODULE_LOAD_ACTION(DLL)), _LOG(\"MODULE: %s => %p\\n\", DLL, (CTX)->_hm), (CTX)->_hm != NULL) \\\n";
   const char* func_import         = "    && _FUNC_IMPORT((CTX), %.*s) \\\n";
   const char* module_load_end     = ")\n\n";
 
   const char* ctx_start           = "typedef struct {\n"
-                                    "  HMODULE _hm;\n";
-  const char* ctx_func            = "  %.*s\n             (__stdcall* %.*s)\n             %.*s;\n\n";
+                                    "  _MODULE_HANDLER _hm;\n";
+  const char* ctx_func            = "  %.*s\n             (_STDCALL_DEF_* %.*s)\n             %.*s;\n\n";
   const char* ctx_end             = "} _CTX;\n\n";
 
   const char* file_end            = "typedef _CTX %s;\n"
@@ -28,6 +43,8 @@ void importer_output(FILE* f, const char* moduleName, FunctionResult results[], 
                                     "#define %s_unload(CTX)      (_MODULE_UNLOAD(CTX))\n";
 
   fprintf(f, "%s", file_head);
+  fprintf(f, "%s", file_include);
+  fprintf(f, "%s", module_loader);
   fprintf(f, "%s", module_load_start);
   for(int i = 0; i < functionCount; ++ i) {
     FunctionResult* result = results + i;
